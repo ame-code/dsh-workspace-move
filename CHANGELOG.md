@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- Fix the plugin card in the plugin manager: the localized title and description
+  now live under a single nested `meta` object, so the list shows
+  “Workspace Move / 移动工作区” instead of the package name.
+
 ## 0.1.0
 
 - Move a workspace folder, its tree, its nested workspace registrations and its

@@ -1,9 +1,7 @@
 {
   "meta": {
-    "meta": {
-      "title": "Workspace Move",
-      "description": "Move a workspace directory — its subfolders, nested workspaces and sessions — to a new location, with rename, rollback and undo."
-    }
+    "title": "Workspace Move",
+    "description": "Move a workspace directory — its subfolders, nested workspaces and sessions — to a new location, with rename, rollback and undo."
   },
   "meta.title": "Workspace Move",
   "meta.description": "Move a workspace directory — its subfolders, nested workspaces and sessions — to a new location, with rename, rollback and undo.",
