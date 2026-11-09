@@ -1,0 +1,3 @@
+- insert:
+    - id: workspace-move
+      name: '@reed-io/dsh-workspace-move'
