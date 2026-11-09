@@ -21,8 +21,8 @@ and its parent folder is never touched.
 
 Right-click a workspace in the sidebar (or use its `…` button) and choose
 **Move workspace…**. Pick the destination folder in the built-in browser, type
-the folder name the workspace should have there, review what travels with it, and
-confirm.
+the folder name the workspace should have there, check the resulting location,
+and confirm.
 
 A move is refused, with a reason, when:
 
