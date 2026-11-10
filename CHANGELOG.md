@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1
+
+- Moving a workspace no longer leaves an empty folder behind in the session
+  storage: once every session it owned has been written to its new place, the
+  folder that encoded the old working directory is removed if nothing else lives
+  in it. Undo and rollback clean up the same way, so a move and its reversal keep
+  the storage root tidy.
+- `test/chain.mjs` moves a workspace through a real `dsh web` host in an isolated
+  `DSH_HOME`; CI runs it on ubuntu-latest and macos-latest, which is the only way
+  the macOS path gets exercised without a Mac.
+
 ## 0.2.0
 
 - macOS and Linux now run the same move path as Windows, with the platform's own

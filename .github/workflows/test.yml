@@ -11,6 +11,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  chain:
+    name: chain / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the build toolchain
+        run: npm install --no-audit --no-fund
+
+      - name: Build the client bundle
+        run: npm run build
+
+      - name: Install the Harness CLI
+        run: |
+          npm install --global pnpm@10
+          npm install --global @deepseek-ai/dsh@0.2.2-rc.1
+
+      - name: Move a workspace through a real dsh web host
+        run: npm run test:chain
+
   test:
     name: ${{ matrix.os }} / node ${{ matrix.node }}
     runs-on: ${{ matrix.os }}

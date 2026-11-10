@@ -1,6 +1,6 @@
 {
   "name": "@reed-io/dsh-workspace-move",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Move a DSH workspace — its folder tree, nested workspaces and sessions — to a new location from the sidebar, with rename, rollback and undo.",
   "author": "reed-io",
   "homepage": "https://github.com/ame-code/dsh-workspace-move#readme",
@@ -78,6 +78,7 @@
     "check": "node scripts/build-client.mjs && node scripts/check-client.mjs && node scripts/audit-client.mjs",
     "test": "node test/unit.mjs && node test/platform.mjs",
     "test:e2e": "node test/e2e.mjs",
+    "test:chain": "node test/chain.mjs",
     "prepack": "node scripts/build-client.mjs"
   },
   "devDependencies": {
