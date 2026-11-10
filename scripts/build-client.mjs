@@ -59,4 +59,6 @@ ${code}
 `;
 await mkdir(dirname(target), { recursive: true });
 await writeFile(target, wrapped, "utf8");
-console.log(`built ${target} (${Buffer.byteLength(wrapped)} bytes)`);
+// stderr: prepack runs during `npm pack --json`, and anything on stdout would
+// corrupt the JSON that callers parse.
+console.error(`built ${target} (${Buffer.byteLength(wrapped)} bytes)`);
