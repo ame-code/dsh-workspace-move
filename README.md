@@ -88,14 +88,18 @@ dsh plugin --profile desktop add @reed-io/dsh-workspace-move@latest
 npm run build     # src/client.js -> lib/client.js（浏览器 bundle）
 npm run check     # 构建后校验客户端 bundle 契约与失败隔离
 npm test          # 单元测试：路径编码、文件夹命名规则、会话日志改写
+npm run test:e2e  # 端到端：真实 Cordis 服务 + 临时会话存储
+npm run test:chain # 真机：起一个隔离的 dsh web，走 HTTP 完成移动与撤销
 ```
 
 `lib/client.js` 是构建产物，请改 `src/client.js`。宿主侧（`lib/*.js` 中除
 `client.js` 外）是普通 ESM，由 Node 直接加载。
 
-另有一套端到端 harness，会拉起真实的 Cordis 服务，在临时会话存储上跑移动、重命名、
-拒绝、回滚与撤销。它需要 `node_modules` 里能解析到 Harness 的包，因此留在开发用的
-检出目录里，不随新克隆的仓库分发。
+两套端到端各有分工：`test/e2e.mjs` 把宿主换成测试替身，跑得快、每个平台都跑；
+`test/chain.mjs` 用真实的 `dsh` CLI 起一个隔离的 `DSH_HOME`，装包、建会话、开
+Host，再通过 HTTP 走一遍移动与撤销，速度慢，只在 CI 的 macOS 与 Linux 上跑——
+那是没有 Mac 也能验证 macOS 代码路径的唯一办法。两者都需要 `node_modules` 里能
+解析到 Harness 的包，因此不随发布包装分发。
 
 ## 许可证
 

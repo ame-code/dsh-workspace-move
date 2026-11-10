@@ -108,15 +108,20 @@ new menu entries.
 npm run build     # src/client.js -> lib/client.js (browser bundle)
 npm run check     # build, then verify the client bundle contract and containment
 npm test          # unit tests: path encoding, folder rules, session log rewriting
+npm run test:e2e  # end to end: real Cordis services plus a scratch session store
+npm run test:chain # real host: boot an isolated dsh web and move over HTTP
 ```
 
 `lib/client.js` is generated — edit `src/client.js` instead. The Host half
 (`lib/*.js` except `client.js`) is plain ESM, loaded straight by Node.
 
-A separate end-to-end harness drives real Cordis services (move, rename, refusal,
-rollback, undo) against a scratch session store. It needs the Harness packages
-resolvable from `node_modules`, so it lives in the development checkout rather
-than in a fresh clone.
+The two end-to-end runs split the work: `test/e2e.mjs` swaps the Host for test
+doubles, runs fast and runs on every platform; `test/chain.mjs` uses the real
+`dsh` CLI with an isolated `DSH_HOME` — install the bundle, create a session, boot
+the Host, then drive move and undo over HTTP. It is slow and runs only on macOS and
+Linux in CI, which is the only way the macOS code path gets exercised without a
+Mac. Both need the Harness packages resolvable from `node_modules`, so neither
+ships in the published package.
 
 ## License
 
