@@ -11,7 +11,7 @@
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -129,7 +129,9 @@ function recordOf(registry, workspaceId) {
   return registry.tables?.workspaces?.[workspaceId];
 }
 
-const root = await mkdtemp(join(tmpdir(), "dshwm-chain-"));
+// macOS resolves /var to /private/var, and the host records the resolved path; the
+// sandbox must be canonical from the start or every comparison misses.
+const root = await realpath(await mkdtemp(join(tmpdir(), "dshwm-chain-")));
 const home = join(root, "home");
 const demo = join(root, "demo");
 const source = join(demo, "a");
