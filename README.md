@@ -1,108 +1,86 @@
 # @reed-io/dsh-workspace-move
 
-Move a DeepSeek Harness workspace — the folder itself, everything inside it, the
-workspaces registered inside it, and the sessions stored for it — to another
-place on disk, from the workspace menu. It behaves like `mv`: one target path, one
-atomic result. Changing the folder name renames the workspace at the same time.
+[English](README.en.md) · **简体中文**
 
-## What a move carries
+把 DeepSeek Harness 的工作区连同它的文件夹、文件夹里的全部内容、其下注册的子工作区以及它保存的会话，一起搬到磁盘上的另一个位置。行为类似 `mv`：一个目标路径，一个原子结果。修改文件夹名时，工作区也会一并重命名。
 
-| Carried with the workspace | How |
+## 一次移动会带上什么
+
+| 跟着工作区一起走的东西 | 方式 |
 | --- | --- |
-| The workspace folder and its whole tree | One rename on the same volume; copy, verify, then delete the source across volumes. |
-| Workspaces registered inside that folder | Their registered paths are rewritten to follow the folder. Registrations, titles and session lists are kept. |
-| Sessions listed in the workspace | Each session log moves to the destination project directory and its stored `cwd` header is rewritten in place, so history and titles are kept byte for byte. |
-| The workspace title | Only when the moving folder also renames the workspace and the title was still the folder name. |
+| 工作区文件夹及其整个目录树 | 同一分区用 rename；跨分区复制、校验后再删源。 |
+| 注册在该文件夹内的子工作区 | 它们的注册路径会跟着文件夹一起改写，注册、标题和会话列表全部保留。 |
+| 工作区列出的会话 | 每个会话日志移动到目标项目目录，并就地改写日志头里的 `cwd`，历史与标题逐字节保留。 |
+| 工作区标题 | 仅当这次移动同时改了文件夹名、且标题仍是文件夹名时才改。 |
 
-Nothing else moves. The source folder is deleted only when the move emptied it,
-and its parent folder is never touched.
+除此之外什么都不动。只有当移动把源目录搬空时才会删除源目录本身，它的上级目录永远不会被触碰。
 
-## Use it
+## 使用方法
 
-Right-click a workspace in the sidebar (or use its `…` button) and choose
-**Move workspace…**. Pick the destination folder in the built-in browser, type
-the folder name the workspace should have there, check the resulting location,
-and confirm.
+在侧边栏右键工作区（或点它的 `…` 按钮），选择 **移动工作区…**。在内置的目录浏览器里选目标文件夹，填写工作区在新位置的文件夹名，核对最终位置，然后确认。
 
-A move is refused, with a reason, when:
+以下情况会拒绝移动并给出原因：
 
-- a workspace folder already exists at the destination — pick another name;
-- the destination is inside the workspace, or the workspace is inside the
-  destination's own path;
-- any of the sessions still has work running — stop them first;
-- the name is not a legal folder name on this platform.
+- 目标位置已经存在同名文件夹 —— 换个名字；
+- 目标在工作区内部，或工作区在目标自身的路径链里；
+- 还有会话正在运行 —— 先停掉它们；
+- 名字在这个平台上不是合法文件夹名。
 
-After a successful move the toast offers **Undo**, and the workspace menu offers
-**Undo last move** while the move is still the most recent one of this run. Undo
-is kept in memory only: it lasts until DeepSeek Harness restarts.
+移动成功后，浮动提示会提供 **撤销**；只要该次移动仍是本轮最近的一次，工作区菜单也会提供 **撤销上次移动**。撤销记录只保存在内存中，Harness 重启后失效。
 
-A move either completes or fails as a whole. If any step fails, the plugin rolls
-back the folder, the registrations and every session it had already touched, and
-reports the failure.
+一次移动要么完整完成，要么整体失败。任何一步出错，插件都会把文件夹、注册信息和已经动过的会话全部回滚，并报告失败原因。
 
-## Agent tool
+## Agent 工具
 
-The same engine is one tool, so an agent can do it too:
+同一套引擎也注册为一个工具，Agent 可以直接调用：
 
 ```text
 move_workspace(workspaceId, targetParent, folderName?)
 ```
 
-`folderName` defaults to the current folder name. The tool reports the final
-destination, how many sessions and nested workspaces came along, and whether the
-move can still be undone.
+`folderName` 省略时沿用原文件夹名。工具会返回最终位置、一起搬走的会话数与子工作区数，以及这次移动是否还能撤销。
 
-## Behaviour notes
+## 行为说明
 
-- The move runs in the Host process, which owns both the workspace registry and
-  the session store; the browser only drives it.
-- Sessions are rewritten in place: only the compressed header frame carrying
-  `cwd` is re-encoded, every event frame is copied byte for byte.
-- A moved session is re-attached to its workspace after its log has landed at the
-  new path, so the workspace keeps its session order.
-- Running DeepSeek Harness does not need a restart after a move for the moved
-  sessions to be usable; a session that is itself currently running cannot be
-  moved, which the running-work check enforces.
-- Developed and verified on Windows first. The path handling, volume detection
-  and folder-name rules are platform-aware, so macOS and Linux use the same code
-  path — with the native shared-folder case handled by the copy-and-verify branch.
+- 移动在 Host 进程内完成，工作区注册表和会话存储都由 Host 拥有；浏览器端只负责驱动。
+- 会话是就地改写：只重新压缩承载 `cwd` 的头部帧，其余事件帧逐字节复制。
+- 会话日志落到新路径后，再重新挂回工作区，因此工作区的会话顺序保持不变。
+- 移动后不需要重启 Harness 才能使用被移动的会话；正在运行的那个会话本身不能被移动，运行检查会拦住它。
+- 首先在 Windows 上开发与验证。路径处理、分区判定和文件夹命名规则都按平台区分，macOS 与 Linux 走同一套代码路径；原生共享文件夹的情况由"复制后校验"分支处理。
 
-## Requirements
+## 依赖
 
 - DeepSeek Harness `>=0.2.0-rc.1 <0.3.0-0`
 - Node `^22.19.0 || >=24.0.0`
-- A local (owner) desktop session: the destination dialog talks to the Host over a
-  loopback-only route.
+- 本机（owner）桌面会话：目标选择对话框通过一条仅限回环地址的路由与 Host 通信。
 
-## Install
+## 安装
 
-Requires a running DeepSeek Harness. Replace `desktop` with the profile you use
-(`web`, `desktop`, …).
+需要已安装并能正常运行 DeepSeek Harness。下面的 `desktop` 请换成你实际使用的
+profile（`web`、`desktop`……）。
 
 ```bash
 dsh plugin --profile desktop add @reed-io/dsh-workspace-move@latest
 ```
 
-Or add the bundle to a profile's `dsh.profile.bundles` and restart DeepSeek
-Harness. After installing, reload the page (`Ctrl+R`) so the sidebar picks up the
-new menu entries.
+或者把该 bundle 加入某个 profile 的 `dsh.profile.bundles`，然后重启 DeepSeek Harness。
+安装后刷新页面（`Ctrl+R`），侧边栏才会出现新的菜单项。
 
-## Development
+## 开发
 
 ```bash
-npm run build     # src/client.js -> lib/client.js (browser bundle)
-npm run check     # build, then verify the client bundle contract and containment
-npm test          # unit tests: path encoding, folder rules, session log rewriting
+npm run build     # src/client.js -> lib/client.js（浏览器 bundle）
+npm run check     # 构建后校验客户端 bundle 契约与失败隔离
+npm test          # 单元测试：路径编码、文件夹命名规则、会话日志改写
 ```
 
-`lib/client.js` is generated — edit `src/client.js` instead. The Host half
-(`lib/*.js` except `client.js`) is plain ESM, loaded straight by Node.
+`lib/client.js` 是构建产物，请改 `src/client.js`。宿主侧（`lib/*.js` 中除
+`client.js` 外）是普通 ESM，由 Node 直接加载。
 
-A separate end-to-end harness drives real Cordis services (move, rename, refusal,
-rollback, undo) against a scratch session store. It needs the Harness packages
-resolvable from `node_modules`, so it lives in the development checkout rather
-than in a fresh clone.
+另有一套端到端 harness，会拉起真实的 Cordis 服务，在临时会话存储上跑移动、重命名、
+拒绝、回滚与撤销。它需要 `node_modules` 里能解析到 Harness 的包，因此留在开发用的
+检出目录里，不随新克隆的仓库分发。
 
-## License
+## 许可证
 
 MIT

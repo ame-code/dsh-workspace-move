@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- `README.md` is now the Chinese readme, with the English one moved to
+  `README.en.md`; both carry a language switcher.
+
 ## 0.1.1
 
 - Fix the plugin card in the plugin manager: the localized title and description

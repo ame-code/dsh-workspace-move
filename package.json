@@ -1,6 +1,6 @@
 {
   "name": "@reed-io/dsh-workspace-move",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Move a DSH workspace — its folder tree, nested workspaces and sessions — to a new location from the sidebar, with rename, rollback and undo.",
   "author": "reed-io",
   "homepage": "https://github.com/ame-code/dsh-workspace-move#readme",
@@ -29,7 +29,7 @@
     "cordis.patch.yml",
     "CHANGELOG.md",
     "README.md",
-    "README.zh-CN.md",
+    "README.en.md",
     "LICENSE"
   ],
   "keywords": [
