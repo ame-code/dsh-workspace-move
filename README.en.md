@@ -65,16 +65,29 @@ move can still be undone.
 - Running DeepSeek Harness does not need a restart after a move for the moved
   sessions to be usable; a session that is itself currently running cannot be
   moved, which the running-work check enforces.
-- Developed and verified on Windows first. The path handling, volume detection
-  and folder-name rules are platform-aware, so macOS and Linux use the same code
-  path — with the native shared-folder case handled by the copy-and-verify branch.
+
+## Platforms
+
+Windows, macOS and Linux run the same code path (CI runs one suite on all three),
+and the behaviour follows the filesystem the plugin actually finds itself on:
+
+| Case | Behaviour |
+| --- | --- |
+| Same volume | `rename`, atomic, links and modes stay as they were |
+| Across volumes / devices | copy → verify entry by entry (name, kind, size, link text) → delete the source; any mismatch rolls the whole move back |
+| Volume case sensitivity | probed at run time, so a case-only rename (`proj` → `Proj`) works on both kinds of volume |
+| Symbolic links | moved as links: never followed, never expanded; the copy branch recreates them and compares the link text, so dangling links stay dangling |
+| Executable bits | preserved by the copy branch |
+| Folder-name rules | Windows refuses `\ : * ? " < > \|`, reserved device names, trailing dots and spaces; POSIX only refuses `/` and control characters |
+| File-name encoding | taken as the filesystem stores it, with no extra normalisation or case rewriting |
 
 ## Requirements
 
 - DeepSeek Harness `>=0.2.0-rc.1 <0.3.0-0`
 - Node `^22.19.0 || >=24.0.0`
-- A local (owner) desktop session: the destination dialog talks to the Host over a
-  loopback-only route.
+- Host and browser on the same machine: the destination dialog talks to the Host
+  over a loopback-only route. Running the `web` profile inside WSL satisfies this
+  with WSL mirrored networking (`networkingMode=mirrored`).
 
 ## Install
 

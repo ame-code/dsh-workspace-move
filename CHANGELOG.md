@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.0
+
+- macOS and Linux now run the same move path as Windows, with the platform's own
+  rules: case sensitivity is probed instead of assumed (so a case-only rename such
+  as `proj` → `Proj` works on case-insensitive volumes), folder names follow the
+  local filesystem's rules instead of Windows' everywhere, and the copy branch
+  preserves executable bits.
+- Symbolic links are moved as links: the copy-and-verify branch recreates them and
+  compares the link text, so a tree containing links survives a cross-volume move
+  and dangling links stay dangling.
+- Fix `isInside` on POSIX: the volume root was trimmed to an empty prefix, which
+  made every containment check against `/` answer "no".
+- Tests that describe filesystem semantics now live in `test/platform.mjs` and
+  adapt to the volume they run on; the end-to-end run moved to `test/e2e.mjs` and
+  no longer depends on a fixed checkout path.
+- CI runs the unit, platform and end-to-end suites on ubuntu-latest,
+  macos-latest and windows-latest.
+
 ## 0.1.2
 
 - `README.md` is now the Chinese readme, with the English one moved to

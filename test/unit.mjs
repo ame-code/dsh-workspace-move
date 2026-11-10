@@ -16,6 +16,10 @@ import { encodeSegment, logFilename, logPath, projectKey } from "../lib/paths.js
 
 let failed = 0;
 let passed = 0;
+const WINDOWS = process.platform === "win32";
+// An absolute root on this platform, so the containment checks below describe
+// the same thing on Windows, macOS and Linux.
+const ROOT = WINDOWS ? "E:/" : "/";
 
 const check = (label, actual, expected) => {
   try {
@@ -64,22 +68,22 @@ check("logPath lays out the store", logPath("C:/root", "E:/work/x", "s1"), join(
 
 check("plain folder name is fine", folderNameProblem("proj"), undefined);
 check("spaces inside a name are fine", folderNameProblem("my proj"), undefined);
-check("colons are rejected", folderNameProblem("a:b"), "name-invalid");
+check("colons follow the platform's rules", folderNameProblem("a:b"), WINDOWS ? "name-invalid" : undefined);
 check("slashes are rejected", folderNameProblem("a/b"), "name-invalid");
 check("empty names are rejected", folderNameProblem(""), "name-invalid");
 check("dot names are rejected", folderNameProblem("."), "name-invalid");
 check("dotdot names are rejected", folderNameProblem(".."), "name-invalid");
-check("trailing dots are rejected", folderNameProblem("x."), "name-invalid");
+check("trailing dots follow the platform's rules", folderNameProblem("x."), WINDOWS ? "name-invalid" : undefined);
 
-check("child is inside parent", isInside("E:/a/b", "E:/a"), true);
-check("deep child is inside parent", isInside("E:/a/b/c/d", "E:/a"), true);
-check("prefix sibling is not inside", isInside("E:/a2", "E:/a"), false);
-check("a path is not inside itself", isInside("E:/a", "E:/a"), false);
-check("everything is inside a drive root", isInside("E:/a", "E:/"), true);
+check("child is inside parent", isInside(join(ROOT, "a", "b"), join(ROOT, "a")), true);
+check("deep child is inside parent", isInside(join(ROOT, "a", "b", "c", "d"), join(ROOT, "a")), true);
+check("prefix sibling is not inside", isInside(join(ROOT, "a2"), join(ROOT, "a")), false);
+check("a path is not inside itself", isInside(join(ROOT, "a"), join(ROOT, "a")), false);
+check("everything is inside a volume root", isInside(join(ROOT, "a"), ROOT), true);
 
-check("samePath folds separators", samePath("E:\\a\\b", "E:/a/b"), true);
-check("samePath ignores a trailing slash", samePath("E:/a/b/", "E:/a/b"), true);
-check("samePath keeps different paths apart", samePath("E:/a/b", "E:/a/c"), false);
+check("samePath resolves dot segments", samePath(join(ROOT, "a", ".", "b"), join(ROOT, "a", "b")), true);
+check("samePath ignores a trailing slash", samePath(`${join(ROOT, "a", "b")}/`, join(ROOT, "a", "b")), true);
+check("samePath keeps different paths apart", samePath(join(ROOT, "a", "b"), join(ROOT, "a", "c")), false);
 
 // --- session logs --------------------------------------------------------
 

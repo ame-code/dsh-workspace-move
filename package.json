@@ -1,6 +1,6 @@
 {
   "name": "@reed-io/dsh-workspace-move",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Move a DSH workspace — its folder tree, nested workspaces and sessions — to a new location from the sidebar, with rename, rollback and undo.",
   "author": "reed-io",
   "homepage": "https://github.com/ame-code/dsh-workspace-move#readme",
@@ -48,9 +48,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": ">=4.0.1 <5.0.0",
     "@deepseek-ai/dsh-tools": ">=0.2.0-rc.1 <0.3.0-0",
-    "@deepseek-ai/dsh-workspace": ">=0.2.0-rc.1 <0.3.0-0",
-    "@deepseek-ai/dsh-session-persistence": ">=0.2.0-rc.1 <0.3.0-0",
-    "@deepseek-ai/dsh-host-webserver": ">=0.2.0-rc.1 <0.3.0-0"
+    "@deepseek-ai/dsh-workspace": ">=0.2.0-rc.1 <0.3.0-0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": {
@@ -60,12 +58,6 @@
       "optional": true
     },
     "@deepseek-ai/dsh-workspace": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-session-persistence": {
-      "optional": true
-    },
-    "@deepseek-ai/dsh-host-webserver": {
       "optional": true
     }
   },
@@ -83,9 +75,21 @@
   },
   "scripts": {
     "build": "node scripts/build-client.mjs",
-    "check": "node scripts/build-client.mjs && node scripts/check-client.mjs",
-    "test": "node test/unit.mjs",
+    "check": "node scripts/build-client.mjs && node scripts/check-client.mjs && node scripts/audit-client.mjs",
+    "test": "node test/unit.mjs && node test/platform.mjs",
+    "test:e2e": "node test/e2e.mjs",
     "prepack": "node scripts/build-client.mjs"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/dsh-session": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-session-persistence-jsonl": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-storage": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-storage-domain": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-storage-json": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-workspace": "0.2.2-rc.1",
+    "esbuild": "0.23.1"
   },
   "publishConfig": {
     "access": "public"
