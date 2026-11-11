@@ -66,6 +66,8 @@ Windows、macOS 和 Linux 走同一套代码路径（CI 在三种系统上跑同
 
 - DeepSeek Harness `>=0.2.0-rc.1 <0.3.0-0`
 - Node `^22.19.0 || >=24.0.0`
+- 已在 `0.2.2-rc.1` 与 `0.2.2-rc.2` 上验证：单元测试与端到端测试都通过；真机链路
+  （`test/chain.mjs`）在 CI 的 ubuntu / macOS 上跑的是 `0.2.2-rc.1`。
 - Host 与浏览器在同一台机器上：目标选择对话框通过一条仅限回环地址的路由与 Host 通信。
   在 WSL 里跑 `web` profile 时，Windows 侧开启 WSL 镜像网络（`networkingMode=mirrored`）
   即可满足这一条。

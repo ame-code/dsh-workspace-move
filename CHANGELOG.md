@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.3
+
+- Re-verified against DeepSeek Harness `0.2.2-rc.2`. Nothing had to change: the
+  client bundle loader still resolves `<package>/client.js` through
+  `window.__ModuleLoader__.load`, `contextMenus` / `slots` / `locale` keep their
+  signatures, the 25 `--dsw-*` tokens the dialog uses all still exist, the router
+  still reports a duplicate prefix route the same way, the workspace registry and
+  the `workspace/session-activity` waterfall are unchanged, and sessions are still
+  written as v4 zstd logs.
+- `engines.dsh` already accepts release candidates beyond `0.2.0-rc.1`: the harness
+  evaluates the range with `includePrerelease`, so `>=0.2.0-rc.1 <0.3.0-0` covers
+  `0.2.2-rc.2` without listing it. The unit, platform and end-to-end suites pass
+  against the rc.2 SDK tree.
+
 ## 0.2.2
 
 - The destination dialog asks for a new folder inline instead of calling

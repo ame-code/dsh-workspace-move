@@ -85,6 +85,9 @@ and the behaviour follows the filesystem the plugin actually finds itself on:
 
 - DeepSeek Harness `>=0.2.0-rc.1 <0.3.0-0`
 - Node `^22.19.0 || >=24.0.0`
+- Verified against `0.2.2-rc.1` and `0.2.2-rc.2`: unit and end-to-end suites pass on
+  both; the real-host chain (`test/chain.mjs`) runs against `0.2.2-rc.1` in CI on
+  ubuntu and macOS.
 - Host and browser on the same machine: the destination dialog talks to the Host
   over a loopback-only route. Running the `web` profile inside WSL satisfies this
   with WSL mirrored networking (`networkingMode=mirrored`).
