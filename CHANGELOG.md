@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.2
+
+- The destination dialog asks for a new folder inline instead of calling
+  `window.prompt`, which Electron does not implement: the "New folder" button used
+  to throw and look dead.
+- Drop the "Use this folder" button. Browsing already selected the folder you were
+  in — that is where the workspace moves — so the button never changed anything.
+  The dialog now says so in a hint next to "New folder" instead of offering a
+  no-op.
+
 ## 0.2.1
 
 - Moving a workspace no longer leaves an empty folder behind in the session

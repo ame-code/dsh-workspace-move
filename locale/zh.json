@@ -17,7 +17,6 @@
   "dialog.home": "主目录",
   "dialog.newFolder": "新建文件夹",
   "dialog.newFolderPrompt": "新文件夹名称",
-  "dialog.pickHere": "选择此文件夹",
   "dialog.confirm": "移动",
   "dialog.cancel": "取消",
   "dialog.moving": "正在移动…",
@@ -38,5 +37,7 @@
   "undo.title": "撤销上次移动",
   "undo.body": "将把工作区及其会话恢复到原来的位置。",
   "undo.confirm": "撤销",
-  "undo.none": "没有可撤销的移动。"
+  "undo.none": "没有可撤销的移动。",
+  "dialog.create": "创建",
+  "dialog.hereIsParent": "当前文件夹就是目标上级"
 }

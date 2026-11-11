@@ -17,7 +17,6 @@
   "dialog.home": "Home",
   "dialog.newFolder": "New folder",
   "dialog.newFolderPrompt": "New folder name",
-  "dialog.pickHere": "Use this folder",
   "dialog.confirm": "Move",
   "dialog.cancel": "Cancel",
   "dialog.moving": "Moving…",
@@ -38,5 +37,7 @@
   "undo.title": "Undo last move",
   "undo.body": "Restores the workspace and its sessions to the previous location.",
   "undo.confirm": "Undo",
-  "undo.none": "Nothing to undo."
+  "undo.none": "Nothing to undo.",
+  "dialog.create": "Create",
+  "dialog.hereIsParent": "The folder you are in is the parent the workspace moves into"
 }

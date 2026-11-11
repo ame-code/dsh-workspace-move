@@ -23,7 +23,8 @@ const translations = {
     "dialog.home": "主目录",
     "dialog.newFolder": "新建文件夹",
     "dialog.newFolderPrompt": "新文件夹名称",
-    "dialog.pickHere": "选择此文件夹",
+    "dialog.create": "创建",
+    "dialog.hereIsParent": "当前文件夹就是目标上级",
     "dialog.confirm": "移动",
     "dialog.cancel": "取消",
     "dialog.moving": "正在移动…",
@@ -61,7 +62,8 @@ const translations = {
     "dialog.home": "Home",
     "dialog.newFolder": "New folder",
     "dialog.newFolderPrompt": "New folder name",
-    "dialog.pickHere": "Use this folder",
+    "dialog.create": "Create",
+    "dialog.hereIsParent": "The folder you are in is the parent the workspace moves into",
     "dialog.confirm": "Move",
     "dialog.cancel": "Cancel",
     "dialog.moving": "Moving…",
@@ -183,6 +185,9 @@ const CSS = `
 .dshwm-input:focus-visible{outline:var(--dsw-focus-ring-width,2px) solid var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary));outline-offset:1px}
 .dshwm-hint{margin:0;font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-tertiary)}
 .dshwm-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
+.dshwm-new{display:flex;align-items:center;gap:6px;margin-top:2px}
+.dshwm-new .dshwm-input{flex:1;min-width:140px}
+.dshwm-grow{flex:1;align-self:center;text-align:left}
 .dshwm-button{padding:7px 14px;border:.5px solid var(--dsw-alias-border-l4);border-radius:var(--dsw-radius-md,8px);background:0 0;color:var(--dsw-alias-label-primary);font:inherit;font-size:12.5px;cursor:pointer}
 .dshwm-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
 .dshwm-button:disabled{opacity:.45;cursor:default}
@@ -242,6 +247,9 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
   const [plan, setPlan] = useState(undefined);
   const [error, setError] = useState(undefined);
   const [busy, setBusy] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [creatingBusy, setCreatingBusy] = useState(false);
   const alive = useRef(true);
 
   useEffect(() => {
@@ -286,16 +294,27 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
     };
   }, [target, folderName, request.workspaceId, t]);
 
+  // A new folder is created inside the folder being browsed and then entered, so the
+  // next thing the user sees is the empty folder they just made, ready to be the parent.
+  // The name is asked for inline: Electron does not implement window.prompt, where the
+  // first version of this dialog asked, so the button appeared to do nothing at all.
   const createFolder = useCallback(async () => {
-    const name = window.prompt(t("dialog.newFolderPrompt"), "");
-    if (name === null) return;
+    const name = draft.trim();
+    if (name === "") return;
+    setCreatingBusy(true);
+    setError(undefined);
     try {
       const made = await callHost("createFolder", { parent: current, name });
+      if (!alive.current) return;
+      setCreating(false);
+      setDraft("");
       await open(made.path);
     } catch (failure) {
-      setError(describeFailure(t, failure));
+      if (alive.current) setError(describeFailure(t, failure));
+    } finally {
+      if (alive.current) setCreatingBusy(false);
     }
-  }, [current, open, t]);
+  }, [current, draft, open, t]);
 
   const confirm = useCallback(async () => {
     setBusy(true);
@@ -364,12 +383,66 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
                 ? h("span", { className: "dshwm-hint" }, t("dialog.emptyFolder"))
                 : entries.map((entry) => h(FolderRow, { key: entry.path, entry, onOpen: (path) => void open(path) }))
           ),
-          h(
-            "div",
-            { className: "dshwm-footer" },
-            h("button", { type: "button", className: "dshwm-button", onClick: () => void createFolder() }, t("dialog.newFolder")),
-            h("button", { type: "button", className: "dshwm-button", onClick: () => void open(current) }, t("dialog.pickHere"))
-          )
+          creating
+            ? h(
+                "div",
+                { className: "dshwm-new" },
+                h("input", {
+                  className: "dshwm-input",
+                  value: draft,
+                  placeholder: t("dialog.newFolderPrompt"),
+                  spellCheck: false,
+                  autoFocus: true,
+                  onChange: (event) => setDraft(event.target.value),
+                  onKeyDown: (event) => {
+                    if (event.key === "Enter") void createFolder();
+                    if (event.key === "Escape") {
+                      setCreating(false);
+                      setDraft("");
+                    }
+                  }
+                }),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "dshwm-button",
+                    disabled: creatingBusy || draft.trim() === "",
+                    onClick: () => void createFolder()
+                  },
+                  t("dialog.create")
+                ),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "dshwm-button",
+                    disabled: creatingBusy,
+                    onClick: () => {
+                      setCreating(false);
+                      setDraft("");
+                    }
+                  },
+                  t("dialog.cancel")
+                )
+              )
+            : h(
+                "div",
+                { className: "dshwm-footer" },
+                h("span", { className: "dshwm-hint dshwm-grow" }, t("dialog.hereIsParent")),
+                h(
+                  "button",
+                  {
+                    type: "button",
+                    className: "dshwm-button",
+                    onClick: () => {
+                      setCreating(true);
+                      setDraft("");
+                    }
+                  },
+                  t("dialog.newFolder")
+                )
+              )
         )
       ),
       h(
