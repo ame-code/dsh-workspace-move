@@ -4,3 +4,5 @@ node_modules/
 *.tgz
 dist.tmp/
 prompt.md
+node_modules*/
+

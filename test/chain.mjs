@@ -21,6 +21,7 @@ import { encodeSegment, logPath, projectKey } from "../lib/paths.js";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DSH = process.env.DSH_CHAIN_BIN ?? (process.platform === "win32" ? "dsh.cmd" : "dsh");
+const WEB_APP = process.env.DSH_CHAIN_WEB_APP ?? "@deepseek-ai/dsh-web-app@0.2.2-rc.3";
 const PROFILE = "chain";
 const HEADER = { "x-dsh-workspace-move": "1", "content-type": "application/json" };
 
@@ -156,7 +157,7 @@ try {
   log("install the plugin into an isolated profile");
   const env = { DSH_HOME: home };
   await run(DSH, ["plugin", "--profile", PROFILE, "add", join(root, tarball)], { env, timeoutMs: 600000 });
-  await run(DSH, ["plugin", "--profile", PROFILE, "add", "@deepseek-ai/dsh-web-app@0.2.2-rc.1"], {
+  await run(DSH, ["plugin", "--profile", PROFILE, "add", WEB_APP], {
     env,
     timeoutMs: 600000
   });
