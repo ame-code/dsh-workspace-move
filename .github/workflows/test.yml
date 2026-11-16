@@ -35,7 +35,7 @@ jobs:
       - name: Install the Harness CLI
         run: |
           npm install --global pnpm@10
-          npm install --global @deepseek-ai/dsh@0.2.2-rc.1
+          npm install --global @deepseek-ai/dsh@0.2.2-rc.3
 
       - name: Move a workspace through a real dsh web host
         run: npm run test:chain
