@@ -36,13 +36,6 @@ export async function releaseScratch() {
   return left;
 }
 
-/** 把 releaseScratch() 的结果转成一条测试断言，返回残留数量。 */
-export function assertNoScratchLeft(failures, left) {
-  if (left.length === 0) return 0;
-  failures.push(`测试临时目录没有删干净：${left.join(", ")}`);
-  return left.length;
-}
-
 /** 可能需要扫的地方：系统临时目录、Windows 各盘根、POSIX 的共享内存与 /mnt 下的挂载点。 */
 export async function scratchRoots() {
   const roots = new Set([resolve(tmpdir())]);
