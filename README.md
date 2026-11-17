@@ -92,7 +92,13 @@ npm run check     # 构建后校验客户端 bundle 契约与失败隔离
 npm test          # 单元测试：路径编码、文件夹命名规则、会话日志改写
 npm run test:e2e  # 端到端：真实 Cordis 服务 + 临时会话存储
 npm run test:chain # 真机：起一个隔离的 dsh web，走 HTTP 完成移动与撤销
+npm run clean:scratch # 手动清掉测试可能残留的 dshwm-* 临时目录
 ```
+
+测试里建临时目录一律走 `test/support/scratch.mjs` 的 `scratch()`：它在 `finally` 里
+统一删除并核对，残留会让测试直接失败。每个 `test` 脚本末尾还会跑一次
+`scripts/scratch.mjs check`，跨进程检查系统临时目录、Windows 各盘根、POSIX 的
+`/dev/shm` 与 `/mnt/*` 有没有漏下的 `dshwm-*` 目录——进程被强行打断时靠它兜底。
 
 `lib/client.js` 是构建产物，请改 `src/client.js`。宿主侧（`lib/*.js` 中除
 `client.js` 外）是普通 ESM，由 Node 直接加载。

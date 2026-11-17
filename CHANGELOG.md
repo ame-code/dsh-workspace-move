@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Tests can no longer leave scratch directories behind. Temporary directories go
+  through `test/support/scratch.mjs`, which deletes them in `finally` and fails the
+  run if one survives; each test script also runs `scripts/scratch.mjs check`,
+  which scans the system temp directory, every Windows drive root, `/dev/shm` and
+  `/mnt/*` for `dshwm-*` leftovers. `npm run clean:scratch` sweeps older ones.
+  The platform test used to create a probe directory on the other volume to prove
+  it was writable and never remove it — one empty folder per run, for example on
+  `D:\` — and now removes it immediately.
+
 ## 0.2.4
 
 - Verified against DeepSeek Harness `0.2.2-rc.3`, this time with the published

@@ -11,13 +11,13 @@
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
-import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { cp, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readArtifactHeader } from "../lib/artifact.js";
 import { encodeSegment, logPath, projectKey } from "../lib/paths.js";
+import { releaseScratch, scratch } from "./support/scratch.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DSH = process.env.DSH_CHAIN_BIN ?? (process.platform === "win32" ? "dsh.cmd" : "dsh");
@@ -132,7 +132,7 @@ function recordOf(registry, workspaceId) {
 
 // macOS resolves /var to /private/var, and the host records the resolved path; the
 // sandbox must be canonical from the start or every comparison misses.
-const root = await realpath(await mkdtemp(join(tmpdir(), "dshwm-chain-")));
+const root = await realpath(await scratch("chain"));
 const home = join(root, "home");
 const demo = join(root, "demo");
 const source = join(demo, "a");
@@ -275,7 +275,9 @@ try {
 } finally {
   stop(host.child);
   await new Promise((done) => setTimeout(done, 500));
-  await rm(root, { recursive: true, force: true }).catch(() => {});
+  // 临时目录统一登记过，这里删除并核对，残留算一条失败
+  const left = await releaseScratch();
+  if (left.length > 0) failures.push(`scratch directory left behind: ${left.join(", ")}`);
 }
 
 console.log(`\n${pass.length} passed, ${failures.length} failed`);

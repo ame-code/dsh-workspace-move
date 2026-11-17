@@ -113,7 +113,15 @@ npm run check     # build, then verify the client bundle contract and containmen
 npm test          # unit tests: path encoding, folder rules, session log rewriting
 npm run test:e2e  # end to end: real Cordis services plus a scratch session store
 npm run test:chain # real host: boot an isolated dsh web and move over HTTP
+npm run clean:scratch # remove any dshwm-* scratch directories the tests left behind
 ```
+
+Tests never create a temporary directory by hand: they call `scratch()` from
+`test/support/scratch.mjs`, which registers it and deletes it in `finally`, failing
+the run if anything survives. Every test script then runs `scripts/scratch.mjs
+check`, which looks for `dshwm-*` directories across the system temp directory,
+each Windows drive root, and `/dev/shm` plus `/mnt/*` on POSIX — the safety net for
+runs that were killed before their teardown could execute.
 
 `lib/client.js` is generated — edit `src/client.js` instead. The Host half
 (`lib/*.js` except `client.js`) is plain ESM, loaded straight by Node.

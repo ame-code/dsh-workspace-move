@@ -5,14 +5,14 @@
  *   node test/unit.mjs
  */
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { constants, zstdCompressSync, zstdDecompressSync } from "node:zlib";
 
 import { copyArtifactWithCwd, isZstdFramed, readArtifactHeader, scanFrames } from "../lib/artifact.js";
 import { folderNameProblem, isInside, samePath } from "../lib/fsx.js";
 import { encodeSegment, logFilename, logPath, projectKey } from "../lib/paths.js";
+import { releaseScratch, scratch } from "./support/scratch.mjs";
 
 let failed = 0;
 let passed = 0;
@@ -102,7 +102,7 @@ const payload = '{"type":"event","kind":"message","text":"hello"}\n{"type":"even
 
 const buildLog = (cwd, id) => Buffer.concat([frame(`${JSON.stringify(header(cwd, id))}\n`), frame(payload)]);
 
-const work = await mkdtemp(join(tmpdir(), "dshwm-unit-"));
+const work = await scratch("unit");
 try {
   const source = join(work, "source.zstd");
   const target = join(work, "target.zstd");
@@ -141,7 +141,12 @@ try {
   });
   check("a log for another session is refused", refused, true);
 } finally {
-  await rm(work, { recursive: true, force: true });
+  // 临时目录由 scratch() 统一登记，这里核对确实删干净了，残留算一条失败
+  const left = await releaseScratch();
+  if (left.length > 0) {
+    failed += 1;
+    console.error(`scratch directory left behind: ${left.join(", ")}`);
+  }
 }
 
 console.log(failed === 0 ? `ALL PASS (${passed})` : `${failed} FAILED, ${passed} passed`);

@@ -12,8 +12,7 @@
  */
 import { Context } from "@deepseek-ai/cordis";
 import * as session from "@deepseek-ai/dsh-session";
-import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, readdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as storage from "@deepseek-ai/dsh-storage";
 import * as storageJson from "@deepseek-ai/dsh-storage-json";
@@ -21,11 +20,12 @@ import * as storageDomain from "@deepseek-ai/dsh-storage-domain";
 import * as persistenceJsonl from "@deepseek-ai/dsh-session-persistence-jsonl";
 import * as workspace from "@deepseek-ai/dsh-workspace";
 import * as plugin from "../lib/plugin.js";
+import { releaseScratch, scratch } from "./support/scratch.mjs";
 
 // realpath up front: macOS hands out /var/... for /private/var/..., and the
 // registry canonicalizes paths, so an un-canonical sandbox would fail every
 // comparison for reasons that have nothing to do with moving.
-const sandbox = await realpath(await mkdtemp(join(tmpdir(), "dshwm-e2e-")));
+const sandbox = await realpath(await scratch("e2e"));
 const storageRoot = join(sandbox, "storages");
 const sessionRoot = join(sandbox, "sessions");
 const home = join(sandbox, "work");
@@ -152,7 +152,9 @@ try {
   check("no backup payload left", leftovers, []);
 } finally {
   await ctx.stop?.().catch?.(() => {});
-  await rm(sandbox, { recursive: true, force: true });
+  // 临时目录统一登记过，这里删除并核对，残留算一条失败
+  const left = await releaseScratch();
+  if (left.length > 0) failures.push(`scratch directory left behind: ${left.join(", ")}`);
 }
 
 console.log(failures.length === 0 ? "ALL PASS" : `FAILURES:\n${failures.join("\n")}`);

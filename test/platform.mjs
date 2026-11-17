@@ -9,12 +9,13 @@
  *   node test/platform.mjs
  */
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, readdir, readFile, readlink, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readdir, readFile, readlink, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, parse } from "node:path";
 
 import { compareTree, copyTree, folderNameProblem, moveDirectory, samePath } from "../lib/fsx.js";
 import { resolveTarget } from "../lib/plan.js";
+import { releaseScratch, scratch } from "./support/scratch.mjs";
 
 const WINDOWS = process.platform === "win32";
 
@@ -60,8 +61,8 @@ async function crossDeviceTarget(avoid) {
     try {
       const info = await stat(candidate);
       if (!info.isDirectory() || info.dev === base.dev) continue;
-      // 探针目录只用来确认可写，用完立刻删掉，否则每跑一次测试就在该盘根目录留下一个空目录
-      const probe = await mkdtemp(join(candidate, "dshwm-xdev-"));
+      // 探针目录只用来确认可写，用完立刻删掉；即使这里出错，收尾的 releaseScratch() 也会兜底
+      const probe = await scratch("probe", candidate);
       await rm(probe, { recursive: true, force: true });
       return candidate;
     } catch {
@@ -72,7 +73,7 @@ async function crossDeviceTarget(avoid) {
 }
 
 async function main() {
-  const work = await mkdtemp(join(tmpdir(), "dshwm-platform-"));
+  const work = await scratch("platform");
   try {
     // The volume decides; the platform only suggests.
     const probe = join(work, "CaseProbe");
@@ -146,7 +147,7 @@ async function main() {
     if (parent === undefined) {
       skip("cross-device move", "only one filesystem is available");
     } else {
-      const across = await mkdtemp(join(parent, "dshwm-across-"));
+      const across = await scratch("across", parent);
       try {
         const from = join(work, "traveller");
         await mkdir(join(from, "inner"), { recursive: true });
@@ -170,7 +171,12 @@ async function main() {
     check("a plain name is accepted", folderNameProblem("proj"), undefined);
     check("the root is not a folder name", folderNameProblem(parse(work).root), "name-invalid");
   } finally {
-    await rm(work, { recursive: true, force: true });
+    // 临时目录（含跨卷那边建的）都登记过，这里统一删除并核对残留
+    const left = await releaseScratch();
+    if (left.length > 0) {
+      failed += 1;
+      console.error(`scratch directory left behind: ${left.join(", ")}`);
+    }
   }
 }
 
