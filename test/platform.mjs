@@ -60,7 +60,10 @@ async function crossDeviceTarget(avoid) {
     try {
       const info = await stat(candidate);
       if (!info.isDirectory() || info.dev === base.dev) continue;
-      if (exists(await mkdtemp(join(candidate, "dshwm-xdev-")))) return candidate;
+      // 探针目录只用来确认可写，用完立刻删掉，否则每跑一次测试就在该盘根目录留下一个空目录
+      const probe = await mkdtemp(join(candidate, "dshwm-xdev-"));
+      await rm(probe, { recursive: true, force: true });
+      return candidate;
     } catch {
       // not present, not writable, or not a directory: try the next one
     }
@@ -144,14 +147,17 @@ async function main() {
       skip("cross-device move", "only one filesystem is available");
     } else {
       const across = await mkdtemp(join(parent, "dshwm-across-"));
-      const from = join(work, "traveller");
-      await mkdir(join(from, "inner"), { recursive: true });
-      await writeFile(join(from, "inner", "note.txt"), "hello");
-      const how = await moveDirectory(from, join(across, "traveller"));
-      check("a cross-device move reports a copy", how, "copy");
-      check("the source is gone", await exists(from), false);
-      check("the content arrived", await readFile(join(across, "traveller", "inner", "note.txt"), "utf8"), "hello");
-      await rm(across, { recursive: true, force: true });
+      try {
+        const from = join(work, "traveller");
+        await mkdir(join(from, "inner"), { recursive: true });
+        await writeFile(join(from, "inner", "note.txt"), "hello");
+        const how = await moveDirectory(from, join(across, "traveller"));
+        check("a cross-device move reports a copy", how, "copy");
+        check("the source is gone", await exists(from), false);
+        check("the content arrived", await readFile(join(across, "traveller", "inner", "note.txt"), "utf8"), "hello");
+      } finally {
+        await rm(across, { recursive: true, force: true });
+      }
     }
 
     // Name rules follow the platform the folder will live on.
