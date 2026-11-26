@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Preserve workspace session membership and order during moves instead of
+  reattaching stored sessions. Unlisted sessions (including subagents) still move
+  with the folder, and their live path/header indexes follow move and undo.
+- Keep complete session backups until a move commits, and remove partial target
+  artifacts on rollback so failed moves do not leave duplicate session IDs or
+  lose companion files. Refuse existing session target directories.
+- Add real-storage regressions for array-valued session IDs, readable JSON,
+  unchanged unrelated workspaces, nested sessions, and registry restart.
+
 - Tests can no longer leave scratch directories behind. Temporary directories go
   through `test/support/scratch.mjs`, which deletes them in `finally` and fails the
   run if one survives; each test script also runs `scripts/scratch.mjs check`,
