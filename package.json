@@ -76,7 +76,7 @@
   "scripts": {
     "build": "node scripts/build-client.mjs",
     "check": "node scripts/build-client.mjs && node scripts/check-client.mjs && node scripts/audit-client.mjs",
-    "test": "node test/unit.mjs && node test/platform.mjs && node scripts/scratch.mjs check",
+    "test": "node test/unit.mjs && node test/platform.mjs && node --test test/reload.mjs && node scripts/scratch.mjs check",
     "test:e2e": "node test/e2e.mjs && node scripts/scratch.mjs check",
     "test:chain": "node test/chain.mjs && node scripts/scratch.mjs check",
     "clean:scratch": "node scripts/scratch.mjs clean",

@@ -26,6 +26,12 @@ Right-click a workspace in the sidebar (or use its `…` button) and choose
 the folder name the workspace should have there, check the resulting location,
 and confirm.
 
+Use **↑** before the address bar to go up. At a filesystem root it opens
+**All drives**; choose a drive to continue browsing.
+You can also enter a full destination-parent path in the address bar and press Enter
+or **Go**. Wait for the folder and final-location preview to load before choosing
+**Move**. Directories come from the machine running the Harness host.
+
 A move is refused, with a reason, when:
 
 - a workspace folder already exists at the destination — pick another name;
