@@ -21,7 +21,8 @@ const translations = {
     "dialog.destination": "移动后位置",
     "dialog.up": "上一层",
     "dialog.home": "主目录",
-    "dialog.drives": "磁盘",
+    "dialog.allDrives": "所有磁盘",
+    "dialog.chooseDrive": "请选择磁盘，再选择目标上级文件夹。",
     "dialog.path": "目录路径",
     "dialog.pathHint": "输入完整目录路径，按回车前往",
     "dialog.pathPending": "目录尚未成功打开；调整路径后按回车重试。",
@@ -66,7 +67,8 @@ const translations = {
     "dialog.destination": "New location",
     "dialog.up": "Up",
     "dialog.home": "Home",
-    "dialog.drives": "Drive",
+    "dialog.allDrives": "All drives",
+    "dialog.chooseDrive": "Choose a drive, then a destination parent folder.",
     "dialog.path": "Folder path",
     "dialog.pathHint": "Enter a full folder path and press Enter",
     "dialog.pathPending": "Folder not opened yet. Adjust the path and press Enter to retry.",
@@ -366,6 +368,8 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
   const crumbs = listing?.crumbs ?? [];
   const entries = listing?.entries ?? [];
   const blocked = preview?.failure !== undefined;
+  const overview = listing?.overview === true;
+  const parent = crumbs.length > 1 ? crumbs[crumbs.length - 2].path : null;
   return h(
     "div",
     {
@@ -393,21 +397,21 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
           "div",
           { className: "dshwm-browser" },
           h("form", { className: "dshwm-navigation", onSubmit: (event) => { event.preventDefault(); if (!busy && !creatingBusy && !browsing && address.trim() !== "") void open(address.trim()); } },
-            (listing?.roots?.length ?? 0) > 1 ? h("select", {
-              className: "dshwm-input",
-              "aria-label": t("dialog.drives"),
-              value: listing.roots.find((root) => current.toLowerCase().startsWith(root.toLowerCase())) ?? "",
-              disabled: busy || creatingBusy || browsing,
-              onChange: (event) => void open(event.target.value)
-            }, h("option", { value: "", disabled: true }, t("dialog.drives")), ...listing.roots.map((root) => h("option", { key: root, value: root }, root))) : null,
+            h("button", {
+              type: "button", className: "dshwm-button",
+              "aria-label": t("dialog.up"), title: t("dialog.up"),
+              disabled: busy || creatingBusy || browsing || listing === undefined || overview,
+              onClick: () => void open(parent)
+            }, "↑"),
+
             h("input", { className: "dshwm-input dshwm-address", "aria-label": t("dialog.path"), placeholder: t("dialog.pathHint"), title: t("dialog.pathHint"), value: address, spellCheck: false, disabled: busy || creatingBusy || browsing, onChange: (event) => setAddress(event.target.value) }),
             h("button", { type: "submit", className: "dshwm-button", disabled: busy || creatingBusy || browsing || address.trim() === "" }, t("dialog.go"))
           ),
-          selectionPending ? h("span", { className: "dshwm-hint", role: "status" }, browsing ? t("dialog.loading") : t("dialog.pathPending")) : null,
+          selectionPending ? h("span", { className: "dshwm-hint", role: "status" }, browsing ? t("dialog.loading") : overview ? t("dialog.chooseDrive") : t("dialog.pathPending")) : null,
           h(
             "div",
             { className: "dshwm-crumbs" },
-            crumbs.map((crumb, index) =>
+            overview ? h("span", null, t("dialog.allDrives")) : crumbs.map((crumb, index) =>
               h(
                 "button",
                 {
@@ -477,7 +481,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
             : h(
                 "div",
                 { className: "dshwm-footer" },
-                h("span", { className: "dshwm-hint dshwm-grow" }, t("dialog.hereIsParent")),
+                h("span", { className: "dshwm-hint dshwm-grow" }, overview ? t("dialog.chooseDrive") : t("dialog.hereIsParent")),
                 h(
                   "button",
                   {
@@ -512,7 +516,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
         h("span", { className: "dshwm-label" }, t("dialog.destination")),
         blocked
           ? h("p", { className: "dshwm-hint" }, preview.failure)
-          : h("div", { className: "dshwm-value" }, !browsing && selectionPending ? t("dialog.pathPending") : preview?.destination ?? t("dialog.loading"))
+          : h("div", { className: "dshwm-value" }, !browsing && overview ? t("dialog.chooseDrive") : !browsing && selectionPending ? t("dialog.pathPending") : preview?.destination ?? t("dialog.loading"))
       ),
       error === undefined ? null : h("p", { className: "dshwm-error" }, error),
       h(

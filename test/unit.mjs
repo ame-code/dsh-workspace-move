@@ -106,6 +106,11 @@ const buildLog = (cwd, id) => Buffer.concat([frame(`${JSON.stringify(header(cwd,
 const work = await scratch("unit");
 try {
   // 使用真实目录验证根列表、跨根导航入口和手动路径的错误反馈。
+  const overview = await browse(null);
+  check("drive overview has no selectable parent", overview.path, "");
+  check("drive overview is explicitly marked", overview.overview, true);
+  check("drive overview lists all roots as entries", overview.entries.map((entry) => entry.path), overview.roots);
+  check("drive overview has no parent breadcrumbs", overview.crumbs, []);
   const browser = await browse(work);
   check("browser lists the current filesystem root", browser.roots.some((root) => samePath(root, parse(work).root)), true);
   check("browser roots are unique", new Set(browser.roots).size, browser.roots.length);

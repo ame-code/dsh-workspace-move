@@ -2,9 +2,11 @@
 
 ## Unreleased
 
-- Add a host-drive selector and an editable folder address to the destination
-  picker, so Windows users can choose another volume or enter a full path. Keep
-  moving and folder creation disabled until navigation and its preview are ready.
+- Add an Up button before the address bar. At a filesystem root, Up opens a drive
+  overview where selecting a disk returns to normal folder browsing.
+- Add an editable folder address to the destination picker, so users can enter
+  another volume or a full path. Keep moving and folder creation disabled until
+  navigation and its preview are ready.
 
 - Preserve workspace session membership and order during moves instead of
   reattaching stored sessions. Unlisted sessions (including subagents) still move
