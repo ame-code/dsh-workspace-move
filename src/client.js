@@ -21,6 +21,12 @@ const translations = {
     "dialog.destination": "移动后位置",
     "dialog.up": "上一层",
     "dialog.home": "主目录",
+    "dialog.drives": "磁盘",
+    "dialog.path": "目录路径",
+    "dialog.pathHint": "输入完整目录路径，按回车前往",
+    "dialog.pathPending": "目录尚未成功打开；调整路径后按回车重试。",
+    "dialog.unreadableFolder": "无法读取这个文件夹，请检查路径和访问权限。",
+    "dialog.go": "前往",
     "dialog.newFolder": "新建文件夹",
     "dialog.newFolderPrompt": "新文件夹名称",
     "dialog.create": "创建",
@@ -60,6 +66,12 @@ const translations = {
     "dialog.destination": "New location",
     "dialog.up": "Up",
     "dialog.home": "Home",
+    "dialog.drives": "Drive",
+    "dialog.path": "Folder path",
+    "dialog.pathHint": "Enter a full folder path and press Enter",
+    "dialog.pathPending": "Folder not opened yet. Adjust the path and press Enter to retry.",
+    "dialog.unreadableFolder": "Cannot read this folder. Check the path and access permissions.",
+    "dialog.go": "Go",
     "dialog.newFolder": "New folder",
     "dialog.newFolderPrompt": "New folder name",
     "dialog.create": "Create",
@@ -143,6 +155,9 @@ function describeFailure(t, error) {
       return t("dialog.insideSelf");
     case "target-ancestor":
       return t("dialog.ancestor");
+    case "directory-unreadable":
+      return t("dialog.unreadableFolder");
+    case "directory-missing":
     case "target-missing":
       return t("dialog.missingFolder");
     case "workspace-unknown":
@@ -173,6 +188,8 @@ const CSS = `
 .dshwm-label{font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary)}
 .dshwm-value{padding:7px 10px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md,8px);background:var(--dsw-alias-bg-module-platform);font-size:12.5px;word-break:break-all}
 .dshwm-browser{display:flex;flex-direction:column;gap:8px;padding:10px;border:.5px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-lg,10px)}
+.dshwm-navigation{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dshwm-address{flex:1;min-width:120px}
 .dshwm-crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-height:22px;font-size:12px}
 .dshwm-crumb{padding:2px 6px;border:0;border-radius:var(--dsw-radius-sm,6px);background:0 0;color:var(--dsw-alias-label-tertiary);font:inherit;font-size:12px;cursor:pointer}
 .dshwm-crumb:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-primary)}
@@ -219,12 +236,13 @@ function installStyles() {
  * @param props - entry data and the click handler.
  * @returns the row.
  */
-function FolderRow({ entry, onOpen }) {
+function FolderRow({ entry, onOpen, disabled }) {
   return h(
     "button",
     {
       type: "button",
       title: entry.path,
+      disabled,
       className: "dshwm-entry",
       onClick: () => onOpen(entry.path)
     },
@@ -242,6 +260,9 @@ function FolderRow({ entry, onOpen }) {
 function MoveDialog({ ctx, t, request, onClose, onDone }) {
   const [listing, setListing] = useState(undefined);
   const [target, setTarget] = useState("");
+  const [address, setAddress] = useState("");
+  const [browsing, setBrowsing] = useState(false);
+  const browseSequence = useRef(0);
   const [current, setCurrent] = useState("");
   const [folderName, setFolderName] = useState(request.currentName ?? "");
   const [plan, setPlan] = useState(undefined);
@@ -261,15 +282,25 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
 
   const open = useCallback(
     async (path) => {
+      const sequence = ++browseSequence.current;
+      setBrowsing(true);
+      setTarget("");
+      setPlan(undefined);
+      setAddress(path ?? "");
+      setCreating(false);
+      setDraft("");
       setError(undefined);
       try {
         const next = await callHost("browse", { path });
-        if (!alive.current) return;
+        if (!alive.current || sequence !== browseSequence.current) return;
         setListing(next);
         setCurrent(next.path);
         setTarget(next.path);
+        setAddress(next.path);
       } catch (failure) {
-        if (alive.current) setError(describeFailure(t, failure));
+        if (alive.current && sequence === browseSequence.current) setError(describeFailure(t, failure));
+      } finally {
+        if (alive.current && sequence === browseSequence.current) setBrowsing(false);
       }
     },
     [t]
@@ -284,10 +315,10 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
     let cancelled = false;
     callHost("plan", { workspaceId: request.workspaceId, targetParent: target, folderName })
       .then((next) => {
-        if (!cancelled) setPlan(next);
+        if (!cancelled) setPlan({ ...next, targetParent: target, folderName });
       })
       .catch((failure) => {
-        if (!cancelled) setPlan({ failure: describeFailure(t, failure), failureCode: failure.code });
+        if (!cancelled) setPlan({ failure: describeFailure(t, failure), failureCode: failure.code, targetParent: target, folderName });
       });
     return () => {
       cancelled = true;
@@ -300,7 +331,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
   // first version of this dialog asked, so the button appeared to do nothing at all.
   const createFolder = useCallback(async () => {
     const name = draft.trim();
-    if (name === "") return;
+    if (name === "" || busy || browsing || creatingBusy || target === "" || address !== current) return;
     setCreatingBusy(true);
     setError(undefined);
     try {
@@ -314,9 +345,13 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
     } finally {
       if (alive.current) setCreatingBusy(false);
     }
-  }, [current, draft, open, t]);
+  }, [address, browsing, busy, creatingBusy, current, draft, open, t, target]);
+
+  const preview = plan?.targetParent === target && plan?.folderName === folderName ? plan : undefined;
+  const selectionPending = browsing || target === "" || address !== current;
 
   const confirm = useCallback(async () => {
+    if (busy || creatingBusy || selectionPending || preview === undefined || preview.failure !== undefined) return;
     setBusy(true);
     setError(undefined);
     try {
@@ -326,11 +361,11 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
       setError(describeFailure(t, failure));
       setBusy(false);
     }
-  }, [folderName, onDone, request.workspaceId, t, target]);
+  }, [busy, creatingBusy, folderName, onDone, preview, request.workspaceId, selectionPending, t, target]);
 
   const crumbs = listing?.crumbs ?? [];
   const entries = listing?.entries ?? [];
-  const blocked = plan?.failure !== undefined;
+  const blocked = preview?.failure !== undefined;
   return h(
     "div",
     {
@@ -357,6 +392,18 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
         h(
           "div",
           { className: "dshwm-browser" },
+          h("form", { className: "dshwm-navigation", onSubmit: (event) => { event.preventDefault(); if (!busy && !creatingBusy && !browsing && address.trim() !== "") void open(address.trim()); } },
+            (listing?.roots?.length ?? 0) > 1 ? h("select", {
+              className: "dshwm-input",
+              "aria-label": t("dialog.drives"),
+              value: listing.roots.find((root) => current.toLowerCase().startsWith(root.toLowerCase())) ?? "",
+              disabled: busy || creatingBusy || browsing,
+              onChange: (event) => void open(event.target.value)
+            }, h("option", { value: "", disabled: true }, t("dialog.drives")), ...listing.roots.map((root) => h("option", { key: root, value: root }, root))) : null,
+            h("input", { className: "dshwm-input dshwm-address", "aria-label": t("dialog.path"), placeholder: t("dialog.pathHint"), title: t("dialog.pathHint"), value: address, spellCheck: false, disabled: busy || creatingBusy || browsing, onChange: (event) => setAddress(event.target.value) }),
+            h("button", { type: "submit", className: "dshwm-button", disabled: busy || creatingBusy || browsing || address.trim() === "" }, t("dialog.go"))
+          ),
+          selectionPending ? h("span", { className: "dshwm-hint", role: "status" }, browsing ? t("dialog.loading") : t("dialog.pathPending")) : null,
           h(
             "div",
             { className: "dshwm-crumbs" },
@@ -368,6 +415,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
                   type: "button",
                   className: "dshwm-crumb",
                   "data-active": index === crumbs.length - 1 ? "true" : "false",
+                  disabled: busy || creatingBusy || browsing,
                   onClick: () => void open(crumb.path)
                 },
                 crumb.name
@@ -381,7 +429,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
               ? h("span", { className: "dshwm-hint" }, t("dialog.loading"))
               : entries.length === 0
                 ? h("span", { className: "dshwm-hint" }, t("dialog.emptyFolder"))
-                : entries.map((entry) => h(FolderRow, { key: entry.path, entry, onOpen: (path) => void open(path) }))
+                : entries.map((entry) => h(FolderRow, { key: entry.path, entry, disabled: busy || creatingBusy || browsing, onOpen: (path) => void open(path) }))
           ),
           creating
             ? h(
@@ -407,7 +455,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
                   {
                     type: "button",
                     className: "dshwm-button",
-                    disabled: creatingBusy || draft.trim() === "",
+                    disabled: busy || creatingBusy || selectionPending || draft.trim() === "",
                     onClick: () => void createFolder()
                   },
                   t("dialog.create")
@@ -435,6 +483,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
                   {
                     type: "button",
                     className: "dshwm-button",
+                    disabled: busy || creatingBusy || selectionPending,
                     onClick: () => {
                       setCreating(true);
                       setDraft("");
@@ -462,8 +511,8 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
         { className: "dshwm-field" },
         h("span", { className: "dshwm-label" }, t("dialog.destination")),
         blocked
-          ? h("p", { className: "dshwm-hint" }, plan.failure)
-          : h("div", { className: "dshwm-value" }, plan?.destination ?? t("dialog.loading"))
+          ? h("p", { className: "dshwm-hint" }, preview.failure)
+          : h("div", { className: "dshwm-value" }, !browsing && selectionPending ? t("dialog.pathPending") : preview?.destination ?? t("dialog.loading"))
       ),
       error === undefined ? null : h("p", { className: "dshwm-error" }, error),
       h(
@@ -475,7 +524,7 @@ function MoveDialog({ ctx, t, request, onClose, onDone }) {
           {
             type: "button",
             className: "dshwm-button dshwm-primary",
-            disabled: busy || blocked || target === "",
+            disabled: busy || creatingBusy || selectionPending || preview === undefined || blocked,
             onClick: () => void confirm()
           },
           busy ? t("dialog.moving") : t("dialog.confirm")

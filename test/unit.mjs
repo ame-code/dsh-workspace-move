@@ -6,11 +6,12 @@
  */
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, parse } from "node:path";
 import { constants, zstdCompressSync, zstdDecompressSync } from "node:zlib";
 
 import { copyArtifactWithCwd, isZstdFramed, readArtifactHeader, scanFrames } from "../lib/artifact.js";
 import { folderNameProblem, isInside, samePath } from "../lib/fsx.js";
+import { browse, createFolder } from "../lib/directory-browse.js";
 import { encodeSegment, logFilename, logPath, projectKey } from "../lib/paths.js";
 import { releaseScratch, scratch } from "./support/scratch.mjs";
 
@@ -104,6 +105,24 @@ const buildLog = (cwd, id) => Buffer.concat([frame(`${JSON.stringify(header(cwd,
 
 const work = await scratch("unit");
 try {
+  // 使用真实目录验证根列表、跨根导航入口和手动路径的错误反馈。
+  const browser = await browse(work);
+  check("browser lists the current filesystem root", browser.roots.some((root) => samePath(root, parse(work).root)), true);
+  check("browser roots are unique", new Set(browser.roots).size, browser.roots.length);
+  const created = await createFolder(work, "目标目录");
+  const refreshed = await browse(work);
+  check("browser lists newly created folders", refreshed.entries.some((entry) => samePath(entry.path, created)), true);
+  const child = await browse(created);
+  check("manual folder paths resolve to their canonical destination", samePath(child.path, created), true);
+  check("folder breadcrumbs lead to the filesystem root", samePath(child.crumbs[0].path, parse(child.path).root), true);
+  for (const root of browser.roots) {
+    const listing = await browse(root);
+    check(`browser can enter root ${root}`, samePath(listing.path, root), true);
+  }
+  let missingCode;
+  await browse(join(work, "missing-folder")).catch((error) => { missingCode = error.code; });
+  check("manual missing paths report a directory error", missingCode, "directory-missing");
+
   const source = join(work, "source.zstd");
   const target = join(work, "target.zstd");
   const original = buildLog("E:/old/place", "session-a");

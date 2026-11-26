@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add a host-drive selector and an editable folder address to the destination
+  picker, so Windows users can choose another volume or enter a full path. Keep
+  moving and folder creation disabled until navigation and its preview are ready.
+
 - Preserve workspace session membership and order during moves instead of
   reattaching stored sessions. Unlisted sessions (including subagents) still move
   with the folder, and their live path/header indexes follow move and undo.
