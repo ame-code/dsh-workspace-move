@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Dispose the HTTP API route with its plugin context on reload, preventing stale
+  handlers from accessing inactive workspace services. Surface registration
+  conflicts instead of silently retaining the previous instance.
+
 - Add an Up button before the address bar. At a filesystem root, Up opens a drive
   overview where selecting a disk returns to normal folder browsing.
 - Add an editable folder address to the destination picker, so users can enter
