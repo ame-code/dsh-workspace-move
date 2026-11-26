@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.5
 
 - Dispose the HTTP API route with its plugin context on reload, preventing stale
   handlers from accessing inactive workspace services. Surface registration
